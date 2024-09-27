@@ -320,7 +320,8 @@ void startTest(char* filename, int diff,char* usrname) {
     }
 
     // Read the entire file into readarray
-    size_t n = fread(readarray, 1, READ_TEXT_SIZE - 1, fp);
+    //fread function can be used to read data from a file
+    size_t n = fread(readarray, 1, READ_TEXT_SIZE - 1, fp); // 1.pointer to where read data will be stored 2.size of each element read 3.number of elements to read
     readarray[n] = '\0';  // Null-terminate the read content
 
     fclose(fp);
@@ -359,7 +360,7 @@ void displayTextWithColor(const char* text, int text_length) {
 
 void handleTypingTest(const char* correct_text,char* usrname) {
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    char user_input[READ_TEXT_SIZE];
+    char user_input[READ_TEXT_SIZE]; // we get character by character and append this array 
     int index = 0;
     int length = strlen(correct_text);
     int ch;
@@ -378,7 +379,7 @@ void handleTypingTest(const char* correct_text,char* usrname) {
                 printf("\b \b"); // Move cursor back, print space, move cursor back again
                 fflush(stdout);
             }
-        } else if (ch == 13) { // Enter
+        } else if (ch == 13) { 
             printf("Test Incomplete !!");
             exit(1);
             break; // End input on Enter
@@ -472,14 +473,13 @@ void makechangestouser(const char* usrname, float wpm) {
     fread(&user1, sizeof(User), 1, fp);
     fclose(fp);  // Close the file after reading
 
-    printf("Before Test : %d \n",user1.no);
+    
     // Update the WPM and calculate the new average
     if (user1.no < ARRAY_SIZE) {
         user1.wpm[user1.no] = (int)wpm;
         user1.no++;
         printf("After Test : %d \n",user1.no);
     } else {
-        // Optional: Handle the case when the array is full
         printf("WPM array is full. No further WPM can be added.\n");
         return;
     }
@@ -519,7 +519,8 @@ void history(char* usrname) {
 
     // Read the user data from the file
     fread(&user1, sizeof(User), 1, fp);
-    fclose(fp); // Close the file after reading
+
+    fclose(fp);// Close the file after reading
 
     printf("\nAverage WPM for user %s is %.2f\n", usrname, user1.average_wpm);
 
@@ -551,7 +552,7 @@ void saveuser(char* usrname)
 
 void showleaderboard()
 {
-    FILE *fp = fopen("user.txt", "r");  // Open the file for reading
+    FILE *fp = fopen("user.txt", "r"); // Open the file for reading
     User allusers[100];
     int count = 0;
     if (fp == NULL) {
