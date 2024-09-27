@@ -232,8 +232,7 @@ void gamewords(char* usrname)
             {
                 printf("Enter Valid Difficulty Choice !!\n");
             }
-        }
-        else
+        }else
         {
             printf("Enter Valid Word Count Choice !!\n");
         }
@@ -289,7 +288,7 @@ void selectTest(int words,int diff,char* usrname)
         strcat(filename, "words\\");
         strcat(filename, "120 words\\");
         
-        startTest(filename,diff,usrname);
+        startTest(filename,diff,usrname); //diff -> difficulty
     }
 
 }
