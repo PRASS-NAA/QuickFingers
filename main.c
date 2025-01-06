@@ -4,6 +4,7 @@
 #include <string.h>
 #include <time.h>
 #include <conio.h>
+#include <ctype.h>
 
 #define MAX_LEN 50
 #define ARRAY_SIZE 100
@@ -86,16 +87,13 @@ int main() {
 
     while (1) {
         clearConsole();
-        printf(" TEST YOUR TYPING SKILLS !! \n Press 1 For Words \n Press 2 For Timed Test : ");
+        printf(" TEST YOUR TYPING SKILLS !! \n Press 1 To Start : ");
         scanf("%d", &gamemode);
+        printf("\n");
 
         if (gamemode == 1) {
             gamewords(usrname);
             //printf("Bye game mode 1");
-            break;
-        } else if (gamemode == 2) {
-            //gametimer();
-            //printf("bye");
             break;
         } else {
             printf("Enter A Valid Choice \n");
@@ -109,6 +107,7 @@ void clearConsole() {
 }
 
 int validatepass(char* password) {
+    // checks for atleast one Capital, Speacial character, Digit
     int len = 0;
     int i;
     int hasCap = 0, hasSpl = 0, hasNum = 0;
@@ -146,12 +145,12 @@ int login(char* username, char* password) {
         fread(&user, sizeof(User), 1, fp);
         fclose(fp);
         if (strcmp(user.password, password) == 0) {
-            return 1;
+            return 1; // sucessfull validation
         } else {
-            return 0;
+            return 0; //user exist but password is incorrect
         }
     } else {
-        return 2;
+        return 2; // user doesnt exist
     }
 }
 
@@ -214,7 +213,7 @@ void gamewords(char* usrname)
 {
     clearConsole();
     int words, diff;
-    printf("\t\t\t SpeedScribbler\n");
+    printf("\t\t\t QuickFingers\n");
     
     while(1)
     {
@@ -261,6 +260,8 @@ void messagetimer(int time){
 
 void selectTest(int words,int diff,char* usrname)
 {
+    // this function is for selecting the folder acc to no of words
+
     char filename[MAX_LEN + 4]; // +4 for ".txt" and null terminator
     if(words == 1)
     {
@@ -299,6 +300,8 @@ void setConsoleTextColor(int color) {
 }
 
 void startTest(char* filename, int diff,char* usrname) {
+    // this function is for selecting files based on difficulty after selecting folder based on words
+
     FILE *fp;
     char readarray[READ_TEXT_SIZE];
     char *paragraphs[MAX_PARAGRAPHS];
@@ -329,6 +332,7 @@ void startTest(char* filename, int diff,char* usrname) {
     // Split the content into paragraphs based on double newline characters
     char *token = strtok(readarray, "\n\n");
     while (token != NULL && paragraph_count < MAX_PARAGRAPHS) {
+        
         paragraphs[paragraph_count++] = token;
         token = strtok(NULL, "\n\n");
     }
@@ -358,98 +362,130 @@ void displayTextWithColor(const char* text, int text_length) {
     printf("%s\n", text);
 }
 
-void handleTypingTest(const char* correct_text,char* usrname) {
+void handleTypingTest(const char* correct_text, char* usrname) {
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    char user_input[READ_TEXT_SIZE]; // we get character by character and append this array 
+    char user_input[READ_TEXT_SIZE] = {0}; 
+    
     int index = 0;
     int length = strlen(correct_text);
     int ch;
-    int errors= 0;
-    //int accerror = 0;
+    int errors = 0;
+    int typed_chars = 0; // Track actual typed characters
+    
     clock_t start_time, end_time;
-
     start_time = clock();
 
+    printf("Start typing the text. Press ESC to cancel or complete the test.\n");
+
     while (index < length) {
-        ch = _getch(); // Read a single character without echo
+        ch = _getch(); // Read a single character
+
+        // Exit condition
+        if (ch == 27) { // ESC key
+            printf("\nTest cancelled!\n");
+            return;
+        }
+
+        // Backspace handling
         if (ch == 8) { // Backspace
             if (index > 0) {
-                //errors--;
                 index--;
-                printf("\b \b"); // Move cursor back, print space, move cursor back again
+                typed_chars--;
+                
+                // Remove last character
+                printf("\b \b");
                 fflush(stdout);
             }
-        } else if (ch == 13) { 
-            printf("Test Incomplete !!");
-            exit(1);
-            break; // End input on Enter
-        } else {
-            user_input[index] = ch;
-            user_input[index + 1] = '\0';
-            index++;
+        } 
+        // Enter key handling
+        else if (ch == 13) { 
+            printf("\nTest Incomplete! Please type the entire text.\n");
+            return;
+        } 
+        // Normal character input
+        else if (isprint(ch)) { // Only accept printable characters
+            // Prevent typing beyond text length
+            if (index < length) {
+                user_input[index] = ch;
+                typed_chars++;
 
-            // Compare input with correct text
-            if (user_input[index - 1] == correct_text[index - 1]) {
-                // Correct character
-                setConsoleTextColor(0x0A);//green
-            } else {
-                // Incorrect character
-                errors++;
-                //accerror++;
-                setConsoleTextColor(0x0C);
+                if (ch == correct_text[index]) {
+                    // Correct character
+                    setConsoleTextColor(0x0A); // Green
+                } else {
+                    // Incorrect character
+                    errors++;
+                    setConsoleTextColor(0x0C); // Red
+                }
+
+                // Print the character
+                printf("%c", ch);
+                fflush(stdout);
+
+                // Reset text color
+                setConsoleTextColor(0x07);
+
+                index++;
             }
-
-            // Print the character
-            printf("%c", user_input[index - 1]);
-            fflush(stdout);
-
-            // Reset text color to default
-            setConsoleTextColor(0x07);
         }
     }
+
     end_time = clock();
     double elapsed_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
 
-    // Reset text color to default
+    // Ensure null-termination
+    user_input[index] = '\0';
+
+    // Reset text color
     setConsoleTextColor(0x07);
     printf("\n");
 
+    // Calculate metrics
     float acc = calAccuracy(length, errors);
-    float wpm = calculateWPM(length, elapsed_time, errors);
+    float wpm = calculateWPM(typed_chars, elapsed_time, errors);
 
-    printf("\nYour Accuracy: %.2f%%\n", acc);
+    // Display results
+    printf("\nTotal Characters: %d\n", length);
+    printf("Typed Characters: %d\n", typed_chars);
+    printf("Errors: %d\n", errors);
+    printf("Your Accuracy: %.2f%%\n", acc);
     printf("Net WPM: %.2f\n", wpm);
-    //printf("\n%s",usrname);
 
-    makechangestouser(usrname,wpm);
+    // Update user statistics
+    makechangestouser(usrname, wpm);
     history(usrname);
-
 }
 
 float calAccuracy(int totalchars, int errorchars) {
-    if (totalchars == 0) return 100.0; // Avoid division by zero
+    
+    if (totalchars <= 0) return 0.0;
+
+    errorchars = (errorchars > totalchars) ? totalchars : errorchars;
+    
+    // Calculate accuracy percentage
     float correct_chars = totalchars - errorchars;
-    float acc = (correct_chars / totalchars) * 100.0f;
-    return acc;
+    float accuracy = (correct_chars / totalchars) * 100.0f;
+    
+    // Ensure accuracy is between 0 and 100
+    return (accuracy < 0) ? 0.0f : (accuracy > 100.0f) ? 100.0f : accuracy;
 }
 
-
-
 float calculateWPM(int totalchars, float elapsed_time, int errors) {
+
+    if (elapsed_time <= 0) return 0.0;
+
     // Convert elapsed time to minutes
     float elapsed_time_minutes = elapsed_time / 60.0;
-    if (elapsed_time_minutes == 0) return 0.0; // Avoid division by zero
 
-    // Convert characters to words (assuming 5 characters per word)
-    float word_count = totalchars / 5.0;
+    // Standard WPM calculation
+    float gross_wpm = (totalchars / 5.0) / elapsed_time_minutes;
 
-    // Gross WPM
-    float gross_wpm = word_count / elapsed_time_minutes;
+    
+    // Subtract a penalty for errors (you might adjust the penalty factor)
+    float net_wpm = gross_wpm - (errors * 0.5);
 
-    // Net WPM calculation
-    float net_wpm = gross_wpm - (errors / elapsed_time_minutes);
-
-    return net_wpm;
+    // Ensure WPM is not negative
+    return net_wpm > 0 ? net_wpm : 0.0;
 }
 
 void makechangestouser(const char* usrname, float wpm) {
